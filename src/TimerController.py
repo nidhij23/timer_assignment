@@ -48,6 +48,6 @@ def set_timer():
 
 if __name__ == '__main__':
     cleanup_finished_jobs(redis_queue)
-    # retry_expired_jobs(redis_connection, 0, start_timer)
+    # requeue_jobs(redis_connection, 0, start_timer)
     app.run(host=FLASK_APP_HOST, port=FLASK_APP_PORT)
 

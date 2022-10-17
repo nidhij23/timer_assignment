@@ -54,15 +54,13 @@ def flush_registry(registry: BaseRegistry):
 #     for job in registry:
 #         redis_queue.enqueue(job)
 
-def retry_expired_jobs(redis: Redis, delay, func):
+def requeue_jobs(redis: Redis, delay, func):
     for key in redis.scan_iter():
-        if redis.ttl(key) == -1:
-            print(key)
-            # remove_key(redis,key)
-            timer_url = redis.get(key)
-            timer_id = key
-            timer_data = {"url": timer_url, "timer_id": timer_id}
-            push_to_queue(delay, func, args=timer_data)
+        delay = redis.ttl(key)
+        timer_url = redis.get(key)
+        timer_id = key
+        timer_data = {"url": timer_url, "timer_id": timer_id}
+        push_to_queue(delay, func, args=timer_data)
 
 
 def cleanup_finished_jobs(queue):
