@@ -1,4 +1,3 @@
-## Table of contents
 
 
 ## General info
@@ -73,17 +72,39 @@ To run this project, install it locally using :
     ```
 
 ## High Level Design:
-Set Timer Workflow:
+### Set Timer Workflow:
 ![Set Timer](designs/set-timer.png)
+When the setTimer POST API is hit, a new python process gets spawned which
+runs which does below tasks:
+1. calculates the total timer duration in seconds
+2. Prepares a new message which would be pushed into the redis queue with a delay which is equal to the 
+duration.
+3. Creates a new entry in the redis with key as the id, value as the url given in request body and ttl equal to the duration.
 
-Get Timer Workflow:
+
+### Get Timer Workflow:
 
 ![Get Timer](designs/get-timer.png)
+The Get Timer GET API does the below:
+1. It checks the redis if it has the id as one of the key.
+2. If it contains the key it return the ttl of the key as the time_left.
+3. If the key is not found, it returns 404 Not found.
 
-WebHook Generation Workflow:
+### WebHook Generation Workflow:
 ![Generate Webhook](designs/webhook-generation.png)
+Below tasks happen when webhook is generated.
+1. Once the delay of the message is reached, the message gets queued in the redis queue and the webhook gets sent.
+2. The key of the timer-id is deleted from redis.
 
-Scheduled Cronjob( to pick lost timers in case of server restart):
+### Requeue worker( to pick dangling timers in case of server restart):
 ![Server Restart](designs/server-restart.png)
+There is a chance that the server might get restarted while some timers were in progress. To handle this, the keys have been persisted in the
+redis with ttl and once the server is restarted it calls the requeue_jobs method and requeus all keys with their ttl.
+The keys already get deleted for the completed timers, so only the pending once remain.
+ For the timers which got completed when the server was down, the ttl would be -1, for these we set the delay as 0 and thus their webhook gets called immediately.
+
+### Scaling the system:
+Right now I have used only one queue in this project but to scale it to handle more number if requests,
+more number of queues need to be added, which can be picked based on some algorithm(least busy queue).
 
 
