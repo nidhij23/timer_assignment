@@ -57,6 +57,8 @@ def flush_registry(registry: BaseRegistry):
 def requeue_jobs(redis: Redis, delay, func):
     for key in redis.scan_iter():
         delay = redis.ttl(key)
+        if delay < 0:
+            delay = 0
         timer_url = redis.get(key)
         timer_id = key
         timer_data = {"url": timer_url, "timer_id": timer_id}
